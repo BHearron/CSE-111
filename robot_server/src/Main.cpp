@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 
-int socket_routine(int & sckt, struct sockaddr_in & address) {
+int socket_setup(int &sckt, struct sockaddr_in &address) {
   // make useable socket
   sckt = socket(AF_INET , SOCK_STREAM , 0);
   if (sckt == 0) {
@@ -42,6 +42,37 @@ int socket_routine(int & sckt, struct sockaddr_in & address) {
 }
 
 
+int listen_routine(int &sckt) {
+
+  // listen to, at max, 3 connections
+  if (listen(sckt, 3) < 0)  
+  {  
+    std::cerr << "error listening" << std::endl;  
+    exit(EXIT_FAILURE);  
+  }
+
+  addrlen = sizeof(address);
+  while (true) {
+    // listen infinitely for a new message to accept
+    accepted_sckt = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)
+    if (accepted_sckt < 0) {
+        perror("accept");
+        exit(EXIT_FAILURE);
+    }
+
+    // read message from accepted socket
+  }
+
+  return EXIT_SUCCESS;
+}
+
+
+int handle_message(int &sckt) {
+  // read messages here
+  return EXIT_SUCCESS;
+}
+
+
 int main(int argc, char * argv[]) {
 
   // use these strings to indicate the state transitions
@@ -59,7 +90,9 @@ int main(int argc, char * argv[]) {
 
   int sckt;
   struct sockaddr_in address;
-  socket_routine(&sckt, &address);
+  socket_setup(sckt, address);
+
+  listen_routine(sckt);
 
 	return EXIT_SUCCESS;
 }
