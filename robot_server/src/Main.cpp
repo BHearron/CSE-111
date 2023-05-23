@@ -10,6 +10,11 @@
 #include <errno.h> 
 #include <unistd.h>
 
+#define PORT 8888
+
+// global state variable here
+int state = 0;
+
 
 int socket_setup(int &sckt, struct sockaddr_in &address) {
   // make useable socket
@@ -54,13 +59,16 @@ int listen_routine(int &sckt) {
   addrlen = sizeof(address);
   while (true) {
     // listen infinitely for a new message to accept
-    accepted_sckt = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)
+    int accepted_sckt = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)
     if (accepted_sckt < 0) {
         perror("accept");
         exit(EXIT_FAILURE);
     }
 
-    // read message from accepted socket
+    // read message from accepted 
+    // socket then clean up
+    handle_message(accepted_sckt);
+    close(accepted_sckt);
   }
 
   return EXIT_SUCCESS;
