@@ -19,6 +19,13 @@ int socket_routine(int & sckt, struct sockaddr_in & address) {
     exit(EXIT_FAILURE);  
   }
 
+  // let the socket be re-used
+  if( setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 )  
+  {  
+    std::cerr << "setsockopt" << std::endl;  
+    exit(EXIT_FAILURE);  
+  }
+
   // define socket address and type
   address.sin_family = AF_INET;  
   address.sin_addr.s_addr = INADDR_ANY;  
@@ -31,7 +38,7 @@ int socket_routine(int & sckt, struct sockaddr_in & address) {
     exit(EXIT_FAILURE);  
   }
 
-
+  return EXIT_SUCCESS;
 }
 
 
@@ -53,7 +60,7 @@ int main(int argc, char * argv[]) {
   int sckt;
   struct sockaddr_in address;
   socket_routine(&sckt, &address);
-  
+
 	return EXIT_SUCCESS;
 }
 
