@@ -20,7 +20,7 @@
 #define PORT 8888
 
 
-/* Credit to Week7 LectureB slides */
+/* Credit to Week7 LectureB slides for below classes */
 class Tickable {
 
   uint64_t last_tick_time = 0;
@@ -54,6 +54,25 @@ class RobotState {
   void set_next_state(const std::string & state_name, std::shared_ptr<RobotState> state) {
     next_states[state_name] = state;
   }
+
+  std::shared_ptr<RobotState> get_next_state(const std::string & transition_name) {
+    std::map<std::string, std::shared_ptr<RobotState>>::iterator it = next_states.find(transition_name); 
+    if (it == next_states.end()) {
+      return nullptr;
+    }
+
+    return it->second;
+  }
+
+  virtual void tick(const SM_Event & event) {
+    if (init_time == 0) {
+      init_time = event.event_time();
+    }
+    curr_time = event.event_time();
+    decide_action(get_elapsed());
+  }
+
+  virtual void decide_action(uint64_t elapsed) = 0;
 };
 
 
