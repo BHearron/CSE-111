@@ -64,11 +64,14 @@ class RobotState {
     return it->second;
   }
 
-  virtual void tick(const SM_Event & event) {
+  virtual void tick(const small_world::SM_Event & event) {
     if (init_time == 0) {
-      init_time = event.event_time();
+      // convert string to uint64_t
+      char* ptr;
+      init_time = strtoull(event.event_time().c_str(), &ptr, 10);
     }
-    curr_time = event.event_time();
+    char* ptr;
+    curr_time = strtoull(event.event_time().c_str(), &ptr, 10);
     decide_action(get_elapsed());
   }
 
