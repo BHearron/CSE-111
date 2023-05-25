@@ -37,7 +37,19 @@ class Tickable {
 };
 
 class StateMachine {
+  std::shared_ptr<RobotState> curr_state;
 
+  public:
+    virtual void tick(const SM_Event & event) {
+      Tickable::tick(event);
+      if (curr_state != nullptr) {
+        curr_state->tick(event);
+      }
+    }
+
+    virtual void set_current_state(std::shared_ptr<RobotState> cs) {
+      curr_state = cs;
+    }
 };
 
 class RobotState {
@@ -46,6 +58,10 @@ class RobotState {
 
   std::map<std::string, std::shared_ptr<RobotState>> next_states;
   std::shared_ptr<StateMachine> owner;
+
+  void set_owner(std::shared_ptr<StateMachine> sm) {
+    owner = sm;
+  }
 
   uint64_t get_elapsed() {
     return curr_time - init_time;
@@ -78,6 +94,49 @@ class RobotState {
   virtual void decide_action(uint64_t elapsed) = 0;
 };
 
+class TimedState: public RobotState {
+  std::string state_name;
+  std::string verb_name;
+
+  uint64_t time_to_wait = 2000;
+
+
+  const std::string get_state_name() {
+    return state_name;
+  }
+
+  const std::string get_verb_name() {
+    return verb_name;
+  }
+
+  void set_time_to_wait(uint64_t ttw) {
+    time_to_wait = ttw;
+  }
+
+  void set_state_name(const std::string & sn) {
+    state_name = sn;
+  }
+
+  void set_verb_name(const std::string & vn) {
+    verb_name = vn;
+  }
+
+  virtual void decide_action(uint64_t duration) {
+    if (duration < time_to_wait) {
+      std::cout << "The robot is " << verb_name << std::endl;
+      return;
+    }
+    
+    std::cout << "The robot ";
+    std::shared_ptr<RobotState> next = get_next_state[“done”];
+    if (next == nullptr) {
+      std::cout << "can't get a next state to go to" << std::endl;
+      return;
+    }
+    std::cout << "has started " << next->get_state_name();
+  }
+
+}
 
 
 
@@ -183,7 +242,20 @@ int main(int argc, char * argv[]) {
   std::string robot_began_waiting = "The robot began waiting";
   std::string robot_begin_moving = "The robot begain moving";
 
-  
+
+  // make the states to use
+  std::shared_ptr<StateMachine> sm = new std::shared_ptr<StateMachine>();
+
+  std::shared_ptr<TimedState> s0 = std::make_shared<TimedState>();
+  s0->set_state_name("wait state");
+  s0->set_verb_name("waiting");
+  s0->set_owner(sm);
+
+  std::shared_ptr<TimedState> s1 = std::make_shared<TimedState>();
+  s1->set_state_name("move state");
+  s1->set_verb_name("moving");
+  s1->set_owner(sm);
+
   // the connection routine below
   int sckt;
   struct sockaddr_in address;
