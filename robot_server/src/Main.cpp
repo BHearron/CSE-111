@@ -20,14 +20,13 @@
 #define PORT 8888
 
 
+
 /* Credit to Week7 LectureB slides for below classes */
 class Tickable {
-
   uint64_t last_tick_time = 0;
-  std::string last_tick_time_string = "";
 
   public:
-
+    // will store the most recent event time
     virtual void tick(const small_world::SM_Event & event) {
       // convert string to uint64_t
       char* end;
@@ -40,12 +39,16 @@ class StateMachine: public Tickable {
 
   public:
     virtual void tick(const small_world::SM_Event & event) {
+      // update the last known event time
       Tickable::tick(event);
+
+      // have the state handle this event if possible
       if (curr_state != nullptr) {
         ((*curr_state).*tick)(event);
       }
     }
 
+    // set the current state, which will handle events
     virtual void set_current_state(std::shared_ptr<RobotState> cs) {
       curr_state = cs;
     }
