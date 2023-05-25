@@ -22,6 +22,44 @@
 
 
 /* Nah new classes here fr */
+class RobotState {
+  // will hold the following info...
+  // 1. state name
+  // 2. state verb
+  // 3. next state
+  //
+
+  std::string state_name;
+  std::string verb_name;
+
+  std::shared_ptr<RobotState> next_state;
+
+  public:
+    // setters
+    void set_state_name(const std::string sn) {
+      state_name = sn;
+    }
+    void set_verb_name(const std::string vn) {
+      verb_name = vn;
+    }
+    void set_next_state(std::shared_ptr<RobotState> ns) {
+      next_state = ns;
+    }
+
+    // getters
+    std::string get_state_name() {
+      return state_name;
+    }
+    std::string get_verb_name() {
+      return verb_name;
+    }
+    std::shared_ptr<RobotState> get_next_state() {
+      return next_state;
+    }
+};
+
+
+
 class StateMachine {
   uint64_t init_time = 0;
   uint64_t curr_time = 0;
@@ -49,12 +87,14 @@ class StateMachine {
         // print messages for grading
         print_finished_message(curr_state);
 
-        curr_state = curr_state->next_state;  // this will throw an error
+        // curr_state = (*curr_state.get())->next_state;  // this will throw an error
+        RobotState *temp = curr_state.get();
+        curr_state = temp->get_next_state();
 
         print_began_message(curr_state);
 
         // change init time
-        set_init_time(curr_time);
+        match_init_curr_time();
       }
     }
   
@@ -79,44 +119,15 @@ class StateMachine {
       char *ptr;
       curr_time = strtoull(event.event_time().c_str(), &ptr, 10);
     }
-    void set_time_elapsed() {
+    void set_elapsed_time() {
       elapsed_time = curr_time - init_time;
     }
-};
-
-class RobotState {
-  // will hold the following info...
-  // 1. state name
-  // 2. state verb
-  // 3. next state
-  //
-
-  std::string state_name;
-  std::string verb_name;
-
-  std::shared_ptr<RobotState> next_state;
-
-  public:
-    // setters
-    void set_state_name(const std::string sn) {
-      state_name = sn;
-    }
-    void set_verb_name(const std::string vn) {
-      verb_name = vn;
-    }
-    void set_next_state
-
-    // getters
-    std::string get_state_name() {
-      return state_name;
-    }
-    std::string get_verb_name() {
-      return verb_name;
-    }
-    std::shared_ptr<RobotState> get_next_state() {
-      return next_state;
+    void match_init_curr_time() {
+      init_time = curr_time;
     }
 };
+
+
 
 
 /* Credit to Week7 LectureB slides */
@@ -222,10 +233,24 @@ int main(int argc, char * argv[]) {
   std::string robot_begin_moving = "The robot begain moving";
 
 
-  // make state machine and states
+  // make states
+  std::shared_ptr<RobotState> s0(new RobotState());
+  s0->set_state_name("move state");
+  s0->set_verb_name("moving");
+
+  std::shared_ptr<RobotState> s1(new RobotState());
+  s1->set_state_name("wait state");
+  s1->set_verb_name("waiting");
+
+  // make states point to each other
+  s0->set_next_state(s1);
+  s1->set_next_state(s0);
+
+  // make state machine. Start on wait state
   std::shared_ptr<StateMachine> sm(new StateMachine());
+  sm->set_curr_state(s1);
 
-
+  std::cout << "finished state machine setup" << std::endl;
 
 
   // the connection routine below
@@ -233,6 +258,9 @@ int main(int argc, char * argv[]) {
   struct sockaddr_in address;
 
   socket_setup(sckt, address);
+  std::cout << "finished socket setup" << std::endl;
+
+  std::cout << "listening on port " << PORT << std::endl;
   listen_routine(sckt, address);
 
 	return EXIT_SUCCESS;

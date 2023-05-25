@@ -11,15 +11,8 @@
 #include <chrono>
 #include <thread>
 
-
-
-/* Credit to Week7 LectureB slides for below classes */
-class Tickable;
-
 class StateMachine;
 
 class RobotState;
-
-class TimedState;
 
 #endif
