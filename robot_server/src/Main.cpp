@@ -17,7 +17,8 @@
 #include "Message.h"
 #include "Classes.h"
 
-#define PORT 8888
+
+#define PORT 8888  // arbitrary
 
 
 
@@ -61,14 +62,17 @@ class RobotState {
   std::map<std::string, std::shared_ptr<RobotState>> next_states;
   std::shared_ptr<StateMachine> owner;
 
+  // sets the owner of this state. Not sure why needed as of right now
   void set_owner(std::shared_ptr<StateMachine> sm) {
     owner = sm;
   }
 
+  // exactly what it says
   uint64_t get_elapsed() {
     return curr_time - init_time;
   }
 
+  // looks insde the map and finds the next state based on the current state. The next state has to be set somewhere right?
   void set_next_state(const std::string & state_name, std::shared_ptr<RobotState> state) {
     next_states[state_name] = state;
   }
