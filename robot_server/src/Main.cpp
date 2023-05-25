@@ -21,130 +21,102 @@
 #define PORT 8888  // arbitrary
 
 
+/* Nah new classes here fr */
+class StateMachine {
+  uint64_t init_time = 0;
+  uint64_t curr_time = 0;
+  uint64_t elapsed_time = 0;
+  uint64_t time_to_wait = 2000;
 
-/* Credit to Week7 LectureB slides for below classes */
-class Tickable {
-  uint64_t last_tick_time = 0;
-
-  public:
-    // will store the most recent event time
-    virtual void tick(const small_world::SM_Event & event) {
-      // convert string to uint64_t
-      char* end;
-      last_tick_time = strtoull(event.event_time().c_str(), &end, 10);
-    }
-};
-
-class StateMachine: public Tickable {
   std::shared_ptr<RobotState> curr_state;
 
   public:
-    virtual void tick(const small_world::SM_Event & event) {
-      // update the last known event time
-      Tickable::tick(event);
-
-      // have the state handle this event if possible
-      if (curr_state != nullptr) {
-        ((*curr_state).*tick)(event);
-      }
+    void set_curr_state(std::shared_ptr<RobotState> state) {
+      curr_state = state;
     }
 
-    // set the current state, which will handle events
-    virtual void set_current_state(std::shared_ptr<RobotState> cs) {
-      curr_state = cs;
+    void tick(const small_world::SM_Event & event) {
+      // set time
+      set_init_time(event);
+      set_curr_time(event);
+      set_elapsed_time();
+
+      // print message based on current state
+      if (elapsed_time < time_to_wait) {
+        print_doing_message(curr_state);
+
+      } else {
+        // print messages for grading
+        print_finished_message(curr_state);
+
+        curr_state = curr_state->next_state;  // this will throw an error
+
+        print_began_message(curr_state);
+
+        // change init time
+        set_init_time(curr_time);
+      }
+    }
+  
+  private:
+    // this will print the messages that will be graded
+    void print_doing_message(std::shared_ptr<RobotState> state) {
+      
+    }
+    void print_began_message(std::shared_ptr<RobotState> state) {
+
+    }
+    void print_finished_message(std::shared_ptr<RobotState> state) {
+
+    }
+
+    // private setters
+    void set_init_time(const small_world::SM_Event & event) {
+      char *ptr;
+      init_time = strtoull(event.event_time().c_str(), &ptr, 10);
+    }
+    void set_curr_time(const small_world::SM_Event & event) {
+      char *ptr;
+      curr_time = strtoull(event.event_time().c_str(), &ptr, 10);
+    }
+    void set_time_elapsed() {
+      elapsed_time = curr_time - init_time;
     }
 };
 
 class RobotState {
-  uint64_t init_time;
-  uint64_t curr_time;
+  // will hold the following info...
+  // 1. state name
+  // 2. state verb
+  // 3. next state
+  //
 
-  std::map<std::string, std::shared_ptr<RobotState>> next_states;
-  std::shared_ptr<StateMachine> owner;
-
-  // sets the owner of this state. Not sure why needed as of right now
-  void set_owner(std::shared_ptr<StateMachine> sm) {
-    owner = sm;
-  }
-
-  // exactly what it says
-  uint64_t get_elapsed() {
-    return curr_time - init_time;
-  }
-
-  // looks insde the map and finds the next state based on the current state. The next state has to be set somewhere right?
-  void set_next_state(const std::string & state_name, std::shared_ptr<RobotState> state) {
-    next_states[state_name] = state;
-  }
-
-  std::shared_ptr<RobotState> get_next_state(const std::string & transition_name) {
-    std::map<std::string, std::shared_ptr<RobotState>>::iterator it = next_states.find(transition_name); 
-    if (it == next_states.end()) {
-      return nullptr;
-    }
-
-    return it->second;
-  }
-
-  virtual void tick(const small_world::SM_Event & event) {
-    if (init_time == 0) {
-      // convert string to uint64_t
-      char* ptr;
-      init_time = strtoull(event.event_time().c_str(), &ptr, 10);
-    }
-    // convert string to uint64_t
-    char* ptr;
-    curr_time = strtoull(event.event_time().c_str(), &ptr, 10);
-    decide_action(get_elapsed());
-  }
-
-  virtual void decide_action(uint64_t elapsed) = 0;
-};
-
-class TimedState: public RobotState {
   std::string state_name;
   std::string verb_name;
 
-  uint64_t time_to_wait = 2000;
+  std::shared_ptr<RobotState> next_state;
 
-
-  const std::string get_state_name() {
-    return state_name;
-  }
-
-  const std::string get_verb_name() {
-    return verb_name;
-  }
-
-  void set_time_to_wait(uint64_t ttw) {
-    time_to_wait = ttw;
-  }
-
-  void set_state_name(const std::string & sn) {
-    state_name = sn;
-  }
-
-  void set_verb_name(const std::string & vn) {
-    verb_name = vn;
-  }
-
-  virtual void decide_action(uint64_t duration) {
-    if (duration < time_to_wait) {
-      std::cout << "The robot is " << verb_name << std::endl;
-      return;
+  public:
+    // setters
+    void set_state_name(const std::string sn) {
+      state_name = sn;
     }
-    
-    std::cout << "The robot ";
-    std::shared_ptr<RobotState> next = get_next_state["done"];
-    if (next == nullptr) {
-      std::cout << "can't get a next state to go to" << std::endl;
-      return;
+    void set_verb_name(const std::string vn) {
+      verb_name = vn;
     }
-    std::cout << "has started " << next->get_state_name();
-  }
+    void set_next_state
 
-}
-
+    // getters
+    std::string get_state_name() {
+      return state_name;
+    }
+    std::string get_verb_name() {
+      return verb_name;
+    }
+    std::shared_ptr<RobotState> get_next_state() {
+      return next_state;
+    }
+};
 
 
 /* Credit to Week7 LectureB slides */
@@ -250,18 +222,11 @@ int main(int argc, char * argv[]) {
   std::string robot_begin_moving = "The robot begain moving";
 
 
-  // make the states to use
-  std::shared_ptr<StateMachine> sm = new std::shared_ptr<StateMachine>();
+  // make state machine and states
+  std::shared_ptr<StateMachine> sm(new StateMachine());
 
-  std::shared_ptr<TimedState> s0 = std::make_shared<TimedState>();
-  s0->set_state_name("wait state");
-  s0->set_verb_name("waiting");
-  s0->set_owner(sm);
 
-  std::shared_ptr<TimedState> s1 = std::make_shared<TimedState>();
-  s1->set_state_name("move state");
-  s1->set_verb_name("moving");
-  s1->set_owner(sm);
+
 
   // the connection routine below
   int sckt;
