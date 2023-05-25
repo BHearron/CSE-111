@@ -189,7 +189,7 @@ int socket_setup(int &sckt, struct sockaddr_in &address) {
 }
 
 
-int listen_routine(int &sckt, struct sockaddr_in &address) {
+int listen_routine(int &sckt, struct sockaddr_in &address, std::shared_ptr<StateMachine> sm) {
   // listen to, at max, 3 connections
   if (listen(sckt, 3) < 0)  
   {  
@@ -261,8 +261,7 @@ int main(int argc, char * argv[]) {
   std::cout << "finished socket setup" << std::endl;
 
   std::cout << "listening on port " << PORT << std::endl;
-  listen_routine(sckt, address);
+  listen_routine(sckt, address, sm);
 
 	return EXIT_SUCCESS;
 }
-
