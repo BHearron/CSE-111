@@ -1,4 +1,3 @@
-
 #include <iostream>
 
 #include <arpa/inet.h>     
@@ -16,6 +15,7 @@
 #include <thread>
 
 #include "Message.h"
+#include "Classes.h"
 
 #define PORT 8888
 
@@ -32,18 +32,17 @@ class Tickable {
       // convert string to uint64_t
       char* end;
       last_tick_time = strtoull(event.event_time().c_str(), &end, 10);
-      std::cout << last_tick_time << std::endl;
     }
 };
 
-class StateMachine {
+class StateMachine: public Tickable {
   std::shared_ptr<RobotState> curr_state;
 
   public:
-    virtual void tick(const SM_Event & event) {
+    virtual void tick(const small_world::SM_Event & event) {
       Tickable::tick(event);
       if (curr_state != nullptr) {
-        curr_state->tick(event);
+        ((*curr_state).*tick)(event);
       }
     }
 
@@ -86,6 +85,7 @@ class RobotState {
       char* ptr;
       init_time = strtoull(event.event_time().c_str(), &ptr, 10);
     }
+    // convert string to uint64_t
     char* ptr;
     curr_time = strtoull(event.event_time().c_str(), &ptr, 10);
     decide_action(get_elapsed());
@@ -128,7 +128,7 @@ class TimedState: public RobotState {
     }
     
     std::cout << "The robot ";
-    std::shared_ptr<RobotState> next = get_next_state[“done”];
+    std::shared_ptr<RobotState> next = get_next_state["done"];
     if (next == nullptr) {
       std::cout << "can't get a next state to go to" << std::endl;
       return;
