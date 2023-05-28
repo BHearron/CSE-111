@@ -58,13 +58,12 @@ class RobotState {
     }
 };
 
-
-
 class StateMachine {
   uint64_t init_time = 0;
   uint64_t curr_time = 0;
   uint64_t elapsed_time = 0;
   uint64_t time_to_wait = 2000;
+  bool     init_time_set = false;
 
   std::shared_ptr<RobotState> curr_state;
 
@@ -75,9 +74,17 @@ class StateMachine {
 
     void tick(const small_world::SM_Event & event) {
       // set time
-      set_init_time(event);
-      set_curr_time(event);
+      if ((init_time == curr_time) && !init_time_set) {
+        set_curr_time(event);
+        set_init_time(event);
+        init_time_set = true;
+      } else {
+        set_curr_time(event);
+      }
       set_elapsed_time();
+
+      // std::cout << "Init Time: " << init_time << std::endl;
+      // std::cout << "Curr Time: " << curr_time << std::endl;
 
       // print message based on current state
       if (elapsed_time < time_to_wait) {
@@ -101,13 +108,13 @@ class StateMachine {
   private:
     // this will print the messages that will be graded
     void print_doing_message(std::shared_ptr<RobotState> state) {
-      
+      std::cout << "The robot is " << state->get_verb_name() << std::endl;
     }
     void print_began_message(std::shared_ptr<RobotState> state) {
-
+      std::cout << "The robot began " << state->get_verb_name() << std::endl;
     }
     void print_finished_message(std::shared_ptr<RobotState> state) {
-
+      std::cout << "The robot finished " << state->get_verb_name() << std::endl;
     }
 
     // private setters
@@ -127,25 +134,30 @@ class StateMachine {
     }
 };
 
-
-
-
 /* Credit to Week7 LectureB slides */
 uint64_t timeSinceEpochMillisec() {
   using namespace std::chrono;
   return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
-
-int handle_message(int &sckt) {
+int handle_message(int &sckt, std::shared_ptr<StateMachine> sm) {
   int client_msg_len = 0;
   do {
-    // get and echo request from client
+    // get request from client
     char buf[1025] = {0};
     client_msg_len = read(sckt, buf, 1024);
-    std::cerr << buf << std::endl;
+    std::string msg(buf);
 
-    // carry out client request
+    // de-serialize message
+    small_world::SM_Event event;
+    event.ParseFromString(msg);
+
+    // print deseralized message
+    // std::cerr << event.event_type() << std::endl;
+    // std::cerr << event.event_time() << '\n' << std::endl;
+
+    // do state machine stuff
+    sm->tick(event);
 
     // send client success
     const char* resp = "Success";
@@ -155,7 +167,6 @@ int handle_message(int &sckt) {
 
   return EXIT_SUCCESS;
 }
-
 
 int socket_setup(int &sckt, struct sockaddr_in &address) {
   // make useable socket
@@ -188,7 +199,6 @@ int socket_setup(int &sckt, struct sockaddr_in &address) {
   return EXIT_SUCCESS;
 }
 
-
 int listen_routine(int &sckt, struct sockaddr_in &address, std::shared_ptr<StateMachine> sm) {
   // listen to, at max, 3 connections
   if (listen(sckt, 3) < 0)  
@@ -208,7 +218,7 @@ int listen_routine(int &sckt, struct sockaddr_in &address, std::shared_ptr<State
     }
 
     // read and handle message from client
-    handle_message(accepted_sckt);
+    handle_message(accepted_sckt, sm);
 
     // clean up
     close(accepted_sckt);
@@ -216,7 +226,6 @@ int listen_routine(int &sckt, struct sockaddr_in &address, std::shared_ptr<State
 
   return EXIT_SUCCESS;
 }
-
 
 int main(int argc, char * argv[]) {
 

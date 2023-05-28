@@ -12,10 +12,13 @@
 #include <errno.h> 
 #include <unistd.h>
 
-#include <string.h>  // for testing purposes
+// #include <string.h>  // for testing purposes
 
 #include <chrono>
 #include <thread>
+
+#include "Message.h"
+
 
 #define PORT 8888
 
@@ -29,12 +32,22 @@ uint64_t timeSinceEpochMillisec() {
 
 int send_message(int &sckt_fd) {
   while(1) {
-    const char* msg = "tick";
-    int rtn = write(sckt_fd, msg, strlen(msg));
-    std::cerr << "rtn: " << rtn << " |  sent tick. Sleeping for 500ms" << std::endl;
+    // make sm event
+    small_world::SM_Event sm;
+    sm.set_event_type("tick");
+    sm.set_event_time(std::to_string(timeSinceEpochMillisec()));
+
+    // serialize 
+    std::string buf;
+    sm.SerializeToString(&buf);
+
+    // send serialized message
+    if (write(sckt_fd, buf.c_str(), buf.size()) == -1) {
+      std::cerr << "Error writing to socket" << std::endl;
+      return EXIT_FAILURE;
+    }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    // sleep(1);
   }
   std::cerr << "how did i get here?" << std::endl;
   return EXIT_SUCCESS;
@@ -74,6 +87,7 @@ int main(int argc, char * argv[]) {
   struct sockaddr_in serv_addr;
 
   setup_socket(sckt_fd, serv_addr);
+
   send_message(sckt_fd);
 
 	return EXIT_SUCCESS;
